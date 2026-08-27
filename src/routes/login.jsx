@@ -1,9 +1,23 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  Link,
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "../components/Button";
 import { Field } from "../components/Field";
+import { useMutation } from "@tanstack/react-query";
+import { signin } from "../api/auth";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../store/authSlice";
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: ({ context }) => {
+    if (context.store.getState().auth.token) {
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   component: LoginPage,
 });
 
@@ -12,11 +26,37 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const mutation = useMutation({
+    mutationFn: signin,
+    onSuccess: (response) => {
+      const data = response.data;
+      if (!data?.access_token) {
+        setError(response.message || "Invalid credentials");
+        return;
+      }
+
+      dispatch(
+        setCredentials({
+          token: data.access_token,
+          expiryTime: data.expiry_time,
+          user: data.user,
+        }),
+      );
+
+      navigate({ to: "/dashboard" });
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
   function handleSubmit(event) {
     event.preventDefault();
     setError("");
-    navigate({ to: "/dashboard" });
+    // navigate({ to: "/dashboard" });
+    mutation.mutate({ email, password });
   }
 
   return (

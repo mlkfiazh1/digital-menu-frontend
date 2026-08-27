@@ -1,10 +1,22 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  Link,
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "../components/Button";
 import { getPasswordIssues } from "../lib/password";
 import { Field } from "../components/Field";
+import { useMutation } from "@tanstack/react-query";
+import { signup } from "../api/auth";
 
 export const Route = createFileRoute("/signup")({
+  beforeLoad: ({ context }) => {
+    if (context.store.getState().auth.token) {
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   component: SignupPage,
 });
 
@@ -16,6 +28,16 @@ function SignupPage() {
   const passwordIssues = getPasswordIssues(password);
   const navigate = useNavigate();
 
+  const mutation = useMutation({
+    mutationFn: signup,
+    onSuccess: () => {
+      navigate({ to: "/login" });
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
   function handleSubmit(event) {
     event.preventDefault();
     setError("");
@@ -25,7 +47,8 @@ function SignupPage() {
       return;
     }
 
-    navigate({ to: "/login" });
+    // navigate({ to: "/login" });
+    mutation.mutate({ name, email, password });
   }
 
   return (
