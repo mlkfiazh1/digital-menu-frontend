@@ -9,3 +9,9 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+export const queryKeys = {
+  me: ["me"],
+  businesses: ["businesses"],
+  menu: (slug) => ["menu", slug],
+};
