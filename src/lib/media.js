@@ -3,7 +3,7 @@ const PRODUCT_API_URL = import.meta.env.VITE_PRODUCT_API_URL;
 export function mediaUrl(image) {
   if (!image) return "";
   if (/^https?:\/\//i.test(image)) return image;
-  return `${PRODUCT_API_URL}/media/${image}`;
+  return `${PRODUCT_API_URL}/public/${image}`;
 }
 
 export function formatPrice(price) {

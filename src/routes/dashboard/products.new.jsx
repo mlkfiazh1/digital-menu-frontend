@@ -2,6 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "../../components/Button";
 import { Field } from "../../components/Field";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient, queryKeys } from "../../lib/queryClient";
+import { fetchBusinesses } from "../../api/business";
+import { useSelector } from "react-redux";
+import { selectAuth } from "../../store/authSlice";
+import { createProduct } from "../../api/products";
 
 export const Route = createFileRoute("/dashboard/products/new")({
   component: NewProductPage,
@@ -14,8 +20,40 @@ function NewProductPage() {
   const [businessId, setBusinessId] = useState("");
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
+  const { token } = useSelector(selectAuth);
 
-  const businesses = [];
+  const businessesQuery = useQuery({
+    queryKey: queryKeys.businesses,
+    queryFn: () => fetchBusinesses(token),
+    enabled: Boolean(token),
+  });
+
+  const businesses = businessesQuery?.data?.data ?? [];
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      createProduct(token, {
+        name,
+        price: price,
+        businessId,
+        file,
+      }),
+    onSuccess: async () => {
+      const business = businesses.find((item) => item.id === businessId);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.businesses });
+      if (business?.slug) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.menu(business.slug),
+        });
+        navigate({ to: "/menu/$slug", params: { slug: business.slug } });
+        return;
+      }
+      navigate({ to: "/dashboard" });
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -30,7 +68,7 @@ function NewProductPage() {
       return;
     }
 
-    navigate({ to: "/dashboard" });
+    mutation.mutate();
   }
 
   return (
