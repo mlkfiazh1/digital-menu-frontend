@@ -10,6 +10,7 @@ import { queryClient } from "./lib/queryClient";
 
 const router = createRouter({
   routeTree,
+  basepath: import.meta.env.BASE_URL,
   context: {
     store,
     queryClient,
